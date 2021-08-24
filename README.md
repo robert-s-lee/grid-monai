@@ -77,13 +77,12 @@ pip install -r tutorials/requirements.txt
 cd tutorials/
 ```
 
-- fix up "" in the leading directory
+- fix up "" in the leading directory that is interpreted as "/"
 ```bash
-f=3d_classification/torch/densenet_training_array.py
 for f in $(find . -name "*.py" -print); do
   sed -ibak 's/data_path = os.sep.join(\[\"\"\,/data_path = os.sep.join(\[\"\.\"\,/g' $f
 done
-git reset
+git reset # revert if not correct git reset --hard 
 M	3d_classification/ignite/densenet_evaluation_array.py
 M	3d_classification/ignite/densenet_evaluation_dict.py
 M	3d_classification/ignite/densenet_training_array.py
@@ -94,10 +93,7 @@ M	3d_classification/torch/densenet_training_array.py
 M	3d_classification/torch/densenet_training_dict.py
 M	pathology/tumor_detection/ignite/camelyon_train_evaluate_nvtx_profiling.py
 M	pathology/tumor_detection/ignite/profiling_camelyon_pipeline.ipynb
-git reset --hard
-
 find . -name "*.pybak" -print -exec rm {} \;
-
 ```
 
 ```bash
