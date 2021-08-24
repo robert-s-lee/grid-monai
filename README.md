@@ -96,21 +96,21 @@ M	pathology/tumor_detection/ignite/profiling_camelyon_pipeline.ipynb
 find . -name "*.pybak" -print -exec rm {} \;
 ```
 
+- run examples that will download data and create checkpoint files required to run some of noteboooks
 ```bash
 ./runexamples.sh
 ```
 
-- Setup Monai 
+- Setup Monai environ vars
 ```bash
-pip install wandb
 # for python scripts
 cat >> ~/.bashrc <<EOF
-#export MONAI_DATA_DIR="offline"
+export MONAI_DATA_DIR="$(pwd)/workspace"
 EOF
 # for notebooks
 ipython profile create
 cat > ~/.ipython/profile_default/startup/oo-monai.py <<EOF
 import os
-#os.environ['MONAI_DATA_DIR'] = "offline"
+os.environ['MONAI_DATA_DIR'] = "$(pwd)/workspace"
 EOF
 ```
