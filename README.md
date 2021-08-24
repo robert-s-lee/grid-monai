@@ -114,3 +114,5 @@ import os
 os.environ['MONAI_DATA_DIR'] = "$(pwd)/workspace"
 EOF
 ```
+
+- test Jupyter notebooks
