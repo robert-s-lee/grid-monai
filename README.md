@@ -62,14 +62,7 @@ EOF
 
 ## Setup Monai tutorial
 
-- setup python environment ## DON"T BELIEVE THIS IS REQUIRED
-
-```bash 
-git clone https://github.com/Project-MONAI/MONAI.git
-pip install -r MONAI/requirements-dev.txt
-```
-
-- Download tutorial
+- Download Monai tutorial
 ```bash
 pip install monai
 pip install -U pip
