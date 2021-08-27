@@ -68,6 +68,7 @@ pip install monai
 pip install -U pip
 pip install -U matplotlib
 pip install -U notebook
+pip install sklearn
 git clone https://github.com/Project-MONAI/tutorials.git
 pip install -r tutorials/requirements.txt
 ```
@@ -96,6 +97,11 @@ M	pathology/tumor_detection/ignite/profiling_camelyon_pipeline.ipynb
 find . -name "*.pybak" -print -exec rm {} \;
 ```
 
+- fix to run on CPU as well
+```bash
+3d_segmentation/torch/unet_evaluation_dict.py
+```
+
 - run examples that will download data and create checkpoint files required to run some of noteboooks
 ```bash
 ./runexamples.sh
@@ -105,13 +111,13 @@ find . -name "*.pybak" -print -exec rm {} \;
 ```bash
 # for python scripts
 cat >> ~/.bashrc <<EOF
-export MONAI_DATA_DIR="$(pwd)/workspace"
+export MONAI_DATA_DIRECTORY="$(pwd)/workspace"
 EOF
 # for notebooks
 ipython profile create
 cat > ~/.ipython/profile_default/startup/oo-monai.py <<EOF
 import os
-os.environ['MONAI_DATA_DIR'] = "$(pwd)/workspace"
+os.environ['MONAI_DATA_DIRECTORY'] = "$(pwd)/workspace"
 EOF
 ```
 
