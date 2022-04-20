@@ -9,26 +9,101 @@ The MONAI framework is the open-source foundation being created by Project MONAI
   
 ```bash
 grid ssh-keys add lit_key ~/.ssh/id_ed25519.pub
-grid session ssh rslee-t2-xlarge # rslee-t2-medium fails and requires non-cached data loader (double check)
+grid session --instance_type 4_cpu_8gb ssh monai # t2.medium fails and requires non-cached data loader (double check)
+tmux # 
 ```
 
 - setup Conda environment
 ```bash
-conda create --yes --name monai python=3.8
-conda activate monai # note you may get prompt to run `conda init bash && exit`
+export CONDA_NAME=monai
+conda create --yes --name $CONDA_NAME python=3.8
+conda activate $CONDA_NAME # note you may get prompt to run `conda init bash && exit`
 pip install ipykernel # allow usage with Jupyter notebook
-python -m ipykernel install --user --name=monai # show as monai in Jupyter notebook
+python -m ipykernel install --user --name=$CONDA_NAME # show conda env in Jupyter notebook
+ipython profile create
 ```
+
+## Setup Monai tutorial
+
+- Download Monai tutorial
+```bash
+# pip install monai
+pip install -U pip matplotlib notebook sklearn # used by some of the notebooks although not listed in the docs
+pip install -r https://raw.githubusercontent.com/Project-MONAI/MONAI/dev/requirements-dev.txt
+
+git clone https://github.com/Project-MONAI/tutorials.git monai-tutorials
+```
+
+- download data and create checkpoint files required to run some of notebooks
+
+This will take about an hour to finish.  use `screen` or `tmux` if connecting remote.
+```bash
+cd monai-tutorials/
+./runexamples.sh
+```
+
+- Setup Monai environ vars
+```bash
+# for python scripts
+cat >> ~/.bashrc <<EOF
+export MONAI_DATA_DIRECTORY="$(pwd)/workspace"
+EOF
+# for notebooks
+cat > ~/.ipython/profile_default/startup/00-monai.py <<EOF
+import os
+os.environ['MONAI_DATA_DIRECTORY'] = "$(pwd)/workspace"
+EOF
+```
+
+# Optional for enhanced observability
+
+- Setup [wandb](https://docs.wandb.ai/guides/track/advanced/environment-variables)
+
+```bash
+pip install wandb
+# for python scripts
+cat >> ~/.bashrc <<EOF
+#export WANDB_MODE="offline"
+export WANDB_NOTEBOOK_NAME="monai"
+export WANDB_MODE="xxx"
+EOF
+
+# for notebooks
+cat > ~/.ipython/profile_default/startup/00-wanb.py <<EOF
+import os
+#os.environ['WANDB_MODE'] = "offline"
+os.environ['WANDB_NOTEBOOK_NAME'] = "monai" # should be notebook file
+os.environ['WANDB_API_KEY'] = "xxx"
+EOF
+```
+
+- fix to run on CPU as well
+```bash
+3d_segmentation/torch/unet_evaluation_dict.py
+```
+
 
 - Setup Linux SAR
 
 SAR allows monitoring of CPU, RAM, IO, Network utilization.
 
 ```bash
-sudo sed -ibak 's/ENABLED=\"false\"/ENABLED=\"true\"/g'  /etc/default/sysstat
-sudo sed -ibak 's/^\(.*\) \(command -v debian-sa1\)/\* \* \* \* \* \2/g' /etc/cron.d/sysstat 
+sudo sed -ibak -e "s#SA_DIR=.*#SA_DIR=${HOME}#g" /etc/sysstat/sysstat 
+diff /etc/sysstat/sysstat /etc/sysstat/sysstatbak
+
+sudo cp /etc/sysstat/sysstatbak /etc/sysstat/sysstat
+
+sudo sed -ibak -e 's/ENABLED=\"false\"/ENABLED=\"true\"/g'  /etc/default/sysstat
+diff /etc/default/sysstat /etc/default/sysstatbak
+sudo sed -ibak -e 's#^5-55/10#\*/1#g' /etc/cron.d/sysstat 
+diff /etc/cron.d/sysstat /etc/cron.d/sysstatbak
+
+
+PATH=$PATH:/usr/lib/sysstat:/usr/sbin:/usr/sbin:/usr/bin:/sbin:/bin
+
 sudo service sysstat restart
 sar 5 # confirm sar is running and Ctl-C to break
+sar -f $HOME/sa07
 ```
 
 - Setup dstat
@@ -41,84 +116,5 @@ sudo mv dstat_nvidia_gpu.py /usr/share/dstat/ #move file to the plugins director
 dstat -a --nvidia-gpu # confirm dstat is running
 ```
 
-- Setup [wandb](https://docs.wandb.ai/guides/track/advanced/environment-variables) 
-```bash
-pip install wandb
-# for python scripts
-cat >> ~/.bashrc <<EOF
-#export WANDB_MODE="offline"
-export WANDB_NOTEBOOK_NAME="monai"
-export WANDB_MODE="xxx"
-EOF
-# for notebooks
-ipython profile create
-cat > ~/.ipython/profile_default/startup/oo-monai.py <<EOF
-import os
-#os.environ['WANDB_MODE'] = "offline"
-os.environ['WANDB_NOTEBOOK_NAME'] = "monai" # should be notebook file
-os.environ['WANDB_API_KEY'] = "xxx"
-EOF
-```
-
-## Setup Monai tutorial
-
-- Download Monai tutorial
-```bash
-pip install monai
-pip install -U pip
-pip install -U matplotlib
-pip install -U notebook
-pip install sklearn
-git clone https://github.com/Project-MONAI/tutorials.git
-pip install -r tutorials/requirements.txt
-```
-
-- Run tutorial
-```bash
-cd tutorials/
-```
-
-- fix up "" in the leading directory that is interpreted as "/"
-```bash
-for f in $(find . -name "*.py" -print); do
-  sed -ibak 's/data_path = os.sep.join(\[\"\"\,/data_path = os.sep.join(\[\"\.\"\,/g' $f
-done
-git reset # revert if not correct git reset --hard 
-M	3d_classification/ignite/densenet_evaluation_array.py
-M	3d_classification/ignite/densenet_evaluation_dict.py
-M	3d_classification/ignite/densenet_training_array.py
-M	3d_classification/ignite/densenet_training_dict.py
-M	3d_classification/torch/densenet_evaluation_array.py
-M	3d_classification/torch/densenet_evaluation_dict.py
-M	3d_classification/torch/densenet_training_array.py
-M	3d_classification/torch/densenet_training_dict.py
-M	pathology/tumor_detection/ignite/camelyon_train_evaluate_nvtx_profiling.py
-M	pathology/tumor_detection/ignite/profiling_camelyon_pipeline.ipynb
-find . -name "*.pybak" -print -exec rm {} \;
-```
-
-- fix to run on CPU as well
-```bash
-3d_segmentation/torch/unet_evaluation_dict.py
-```
-
-- run examples that will download data and create checkpoint files required to run some of noteboooks
-```bash
-./runexamples.sh
-```
-
-- Setup Monai environ vars
-```bash
-# for python scripts
-cat >> ~/.bashrc <<EOF
-export MONAI_DATA_DIRECTORY="$(pwd)/workspace"
-EOF
-# for notebooks
-ipython profile create
-cat > ~/.ipython/profile_default/startup/oo-monai.py <<EOF
-import os
-os.environ['MONAI_DATA_DIRECTORY'] = "$(pwd)/workspace"
-EOF
-```
-
-- test Jupyter notebooks
+- nvidia-smi dstat
+sudo nvidia-smi daemon -d 60 -p $HOME
